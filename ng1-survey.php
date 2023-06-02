@@ -13,10 +13,20 @@ if (class_exists('ACF')) {
 }
 
 function sondage_plugin_init() {
-    // Inclure le fichier formulaire.php
-    require_once plugin_dir_path(__FILE__) . 'ng1-formulaire-class.php';
+
+
+
     // Initialisation du plugin de sondage
     $sondage_plugin = new Ng1SondagePlugin();
+
+    // generation de pdf
+    //require_once plugin_dir_path(__FILE__) . 'ng1-wkhmltopdf.php';
+    //$inputURL = '<html><body><h1>Bravo !</h1></body></html>';
+    //$pdfGenerator = new Ng1Wkhtmltopdf($inputURL);
+
+
+
+
     $sondage_plugin->init();
 }
 
@@ -24,17 +34,18 @@ class Ng1SondagePlugin {
     private $formulaire;
 
     public function __construct() {
-        $this->formulaire = new Ng1FormulaireClass();
+       // $this->formulaire = new Ng1FormulaireClass();
     }
     
     public function init() {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_action('init', array($this, 'register_post_type_formulaire'));
+        add_action('init', array($this, 'register_post_type_resultat'));
         add_action('init', array($this, 'register_post_type_reponse'));
         add_action('init',  array($this,'create_custom_taxonomy'));
         add_shortcode('ng1_survey', array($this, 'ng1_survey_shortcode'));
         add_action('acf/save_post', array($this,'acf_save_form_data'));
-        register_activation_hook(__FILE__,  array($this,'create_custom_page'));
+        register_activation_hook(__FILE__,  array($this,'create_validation_page'));
         add_filter('the_content', array($this,'modify_validation_content'));
     }
 
@@ -46,7 +57,7 @@ class Ng1SondagePlugin {
         wp_register_style('sondage-style', plugins_url('style.css', __FILE__));
         wp_enqueue_style('sondage-style');
     }
-   public static function convertTextAreaToRadioButtons($textareaValue,$name,$val='') {
+   public static function convertTextAreaToRadioButtons($textareaValue,$name,$question_nb="1", $cat='', $val='',$readonly=false) {
         $lines = explode("\n", $textareaValue);
     
         foreach ($lines as $index => $line) {
@@ -61,47 +72,65 @@ class Ng1SondagePlugin {
                 }else{
                     $check= '';
                 }
-                echo '<input type="radio" name="'.$name.'" value="' . $value . '" '.$check.'>' . $label . '<br>';
+                ?>
+                <?php if($readonly){ 
+                        $attr_readonly='readonly';
+                    }else{
+                        $attr_readonly='';
+                    } 
+                ?>
+                <div>
+                    <label class="ng1-survey__label" for="<?php echo $name . '_' . $value; ?>">
+                    <?php if($attr_readonly):?>
+                        <div class="ng1-survey__radio ng1-survey__radio_div <?php echo $check; ?>">
+                        <?php if(!empty($check)):?>
+                        <em class="ng1-survey__radio_div__response">
+                        <?php endif; ?>
+                        <?php echo $label; ?>
+                        <?php if(!empty($check)):?>
+                        </em>
+                        <?php endif; ?>
+                    </div>
+                    <?php else: ?>
+                        <input  class="ng1-survey__radio" type="radio" data-index="<?php echo $question_nb; ?>" data-cat='<?php echo $cat; ?>' name="<?php echo $name; ?>" value="<?php echo $value; ?>" <?php echo $check; ?> id="<?php echo $name . '_' . $value; ?>">
+                        <?php echo $label; ?>
+                        <?php endif; ?>
+                    </label>
+                </div>
+                <?php
             }
         }
     }
     public function ng1_survey_shortcode($atts) {
-     // Récupérer l'ID du formulaire à partir des attributs
-     $atts = shortcode_atts(array(
-        'id' => '',
-    ), $atts);
-    $form_id = $atts['id'];
+        //shortcode : ng1_survey'
+        // Récupérer l'ID du formulaire à partir des attributs
+        $atts = shortcode_atts(array(
+            'id' => '',
+            'view' =>'form'
+        ), $atts);
+        $form_id = $atts['id'];
+        $view = $atts['view'];
 
-    // Vérifier si l'ID du formulaire est spécifié
-    if (empty($form_id)) {
-        return ''; // Retourner une chaîne vide si l'ID du formulaire n'est pas spécifié
-    }
+        // Vérifier si l'ID du formulaire est spécifié
+        if (! empty($form_id) && $view='form') {
+             // Code pour afficher et traiter le formulaire de sondage avec l'ID spécifié
+             $form_fields= get_fields($form_id);
+             $i=0;
+             ob_start();
+             // Inclure le contenu du fichier du formulaire
+             include_once 'view/tpl-form.php';
 
-
-    // Code pour afficher et traiter le formulaire de sondage avec l'ID spécifié
-    $form_fields= get_fields($form_id);
-    $i=0;
-    ob_start();
-    ?>
-<form id='survey-form' action="/validation" method="post">
-
-    <?php foreach($form_fields['questions'] as  $item): 
-    $i++;
-        extract($item )?>
-
-       <h2> <?php echo $question; ?></h2>
-  <?php echo  $this->convertTextAreaToRadioButtons($reponse,'reponse_'.$i); ?>
-  
-        
-    <?php endforeach ;?>
-    <input type="text" name ='user_id' value='<?php echo get_current_user_id() ?>'>
-    <input type="text" name ='form_id' value='<?php echo $form_id; ?>'>
-    <input type="text" name ='form_data' value ='<?php echo  json_encode($form_fields) ?>'>
-    <button type="submit">Valider</button>
-</form>
-    <?php var_dump($form_fields['questions']); ?>
-<?php
-    return ob_get_clean();
+             return ob_get_clean();
+        }else if($view == 'myQuiz'){
+            ob_start();
+            include_once 'view/tpl-user-quiz.php';
+            return ob_get_clean();
+        }else if($view == 'resultat'){
+            ob_start();
+            include_once 'view/tpl-result.php';
+            return ob_get_clean();
+        }
+        return;
     }
 
     function acf_save_form_data($post_id) {
@@ -136,6 +165,24 @@ class Ng1SondagePlugin {
         );
 
         register_post_type('formulaire', $args);
+    }
+    public function register_post_type_resultat() {
+        $labels = array(
+            'name' => 'Resultat',
+            'singular_name' => 'Resultat',
+        );
+
+        $args = array(
+            'labels' => $labels,
+            'public' => false,
+            'rewrite' => false,
+            'show_ui' => true,
+            'show_in_menu' => true,
+            'show_in_rest' => true
+            // Ajoutez d'autres arguments selon vos besoins
+        );
+
+        register_post_type('resultat', $args);
     }
     function create_custom_taxonomy() {
         $taxonomy = 'categorie_question'; // Remplacez "categorie_question" par le slug souhaité pour votre taxonomie
@@ -185,7 +232,7 @@ class Ng1SondagePlugin {
         register_post_type('reponse', $args);
     }
 
-    function create_custom_page() {
+    function create_validation_page() {
         // Vérifiez si la page existe déjà
         $page = get_page_by_path('validation');
     
@@ -206,10 +253,11 @@ class Ng1SondagePlugin {
     function modify_validation_content($content) {
         // Vérifiez si c'est la page que vous souhaitez modifier en fonction de son ID, de son slug ou d'autres critères
         if (is_page('validation')) {
-            ob_start();?>
+            ob_start();
+            /* ?>
             <pre><?php var_dump($_POST); ?></pre>
 
-            <?php
+            <?php */
             include_once "validation.php";
             // Modifiez le contenu de la page ici
             $modified_content =ob_get_clean();
@@ -223,6 +271,61 @@ class Ng1SondagePlugin {
     }
     function show_response($json){
         
+    }
+    public static function generateSpiderChart($data) {
+        // Paramètres du graphique
+        $chartRadius = 100; // Rayon du graphique
+        $chartCenterX = 300; // Coordonnée X du centre du graphique
+        $chartCenterY = 250; // Coordonnée Y du centre du graphique
+    
+        // Calcul de l'angle entre chaque catégorie
+        $angleStep = 360 / count($data);
+    
+        // Fonction pour convertir une valeur en coordonnées polaires
+        function polarToCartesian($angle, $radius, $centerX, $centerY) {
+            $angleRad = deg2rad($angle);
+            $x = $centerX + ($radius * cos($angleRad));
+            $y = $centerY + ($radius * sin($angleRad));
+            return array('x' => $x, 'y' => $y);
+        }
+    
+    // Génération du code SVG
+    $svg = '<svg width="600" height="500" xmlns="http://www.w3.org/2000/svg">';
+
+    // Récupération des clés du tableau
+    $keys = array_keys($data);
+
+// Dessin des lignes du graphique
+foreach ($keys as $index => $key) {
+    $angle = $index * $angleStep;
+    $startCoords = polarToCartesian($angle, 0, $chartCenterX, $chartCenterY); // Point de départ à l'intérieur du graphique
+    //$endCoords = polarToCartesian($angle, $data[$key] * $chartRadius . , $chartCenterX, $chartCenterY); // Point d'arrivée en fonction de la valeur
+    $endCoords = polarToCartesian($angle, $chartRadius + 100, $chartCenterX, $chartCenterY); // Point d'arrivée en fonction de la valeur
+    $svg .= '<line x1="' . $startCoords['x'] . '" y1="' . $startCoords['y'] . '" x2="' . $endCoords['x'] . '" y2="' . $endCoords['y'] . '" style="stroke: rgba(55,55,55,.3); stroke-width: 1;" />';
+
+    // Positionnement du texte de catégorie
+    $textCoords = polarToCartesian($angle, $chartRadius + 100, $chartCenterX + 20, $chartCenterY + 20);
+    $svg .= '<text x="' . $textCoords['x'] . '" y="' . $textCoords['y'] . '" text-anchor="middle">' . $key . '</text>';
+
+    // Dessin de l'échelle
+   //$scaleCoords = polarToCartesian($angle, $chartRadius + 10, $chartCenterX, $chartCenterY);
+   //$scaleEndCoords = polarToCartesian($angle, $chartRadius + 30, $chartCenterX, $chartCenterY);
+   //$svg .= '<line x1="' . $scaleCoords['x'] . '" y1="' . $scaleCoords['y'] . '" x2="' . $scaleEndCoords['x'] . '" y2="' . $scaleEndCoords['y'] . '" style="stroke: rgba(55,55,55,.3); stroke-width: 1;" />';
+}
+    // Dessin des polygones représentant les valeurs
+    $points = '';
+    foreach ($keys as $index => $key) {
+        $angle = $index * $angleStep;
+        $radius = ($data[$key] / 10) * $chartRadius; // Normalisation de la valeur entre 0 et 1
+        $coords = polarToCartesian($angle, $radius, $chartCenterX, $chartCenterY);
+        $points .= $coords['x'] . ',' . $coords['y'] . ' ';
+    }
+    $svg .= '<polygon points="' . $points . '" style="fill: rgba(0, 0, 255, 0.5);" />';
+
+    $svg .= '</svg>';
+
+    // Retourner le code SVG
+    return $svg;
     }
    
 }

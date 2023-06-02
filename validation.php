@@ -1,18 +1,29 @@
 <?php 
 
-echo "validation";
 extract($_POST);
-$data= json_decode(stripslashes($form_data),true);
-$form =$data['questions']= json_decode(stripslashes($form_data),true);
-$questions=$form['questions'];
+include 'view/tpl-chart.php';?>
+<?php
+include 'view/tpl-response.php';
+?>
+<form action="resultat" method="post">
+<?php
+    foreach ($_POST as $key => $value) {
+        // if (is_array($value)) {
+        //     foreach ($value as $subKey => $subValue) {
+        //         echo '<input type="hidden" name="' . $key . '[' . $subKey . ']" value="' . $subValue . '">';
+        //     }
+        // } else {
+        //     echo '<input type="hidden" name="' . $key . '" value="' . $value . '">';
+        // }
+        if (is_array($value)) {
+            foreach ($value as $subKey => $subValue) {
+                echo "<input type='hidden' name='" . $key . "[" . $subKey . "]' value='" . $subValue . "'>";
+            }
+        } else {
+            echo "<input type='hidden' name='" . $key . "' value='" . $value . "'>";
+        }
+    }
+    ?>
 
-$i=0;
-foreach ($questions as  $question) {
-    $i++;
-   
-   echo "Question : " . $question['question'] . "<br>";
-   echo "Catégorie : " . implode(', ', $question['categorie']) . "<br>";
-  
-   Ng1SondagePlugin::convertTextAreaToRadioButtons( $question['reponse'],"reponse_".$i,${"reponse_".$i});
-
-}
+<button type="submit">Valider les réponses</button>
+</form>
