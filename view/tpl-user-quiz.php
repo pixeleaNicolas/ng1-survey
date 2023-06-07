@@ -61,5 +61,42 @@ if ($query->have_posts()) {
 <p>C'est une occasion de réfléchir à votre situation actuelle et de recevoir des recommandations personnalisées pour améliorer votre bien-être au travail. </p>
 <p>Ne tardez pas, saisissez cette opportunité pour investir dans votre qualité de vie professionnelle. Remplissez le quiz dès maintenant !</p>
     <?php
+}?>
+
+<h2>Forumulaire en cours</h2>
+<?php
+
+
+// Arguments de requête pour récupérer les posts du type "réponse" de l'utilisateur courant
+$args = array(
+    'post_type'      => 'reponse',
+    'author'         => $current_user->ID,
+    'posts_per_page' => 1, // Récupérer tous les posts
+    'post_status' =>'draft',
+);
+
+// Exécution de la requête
+$query = new WP_Query($args);
+
+// Vérifier si des posts ont été trouvés
+if ($query->have_posts()) {
+    // Afficher l'en-tête du tableau
+
+
+    // Boucle sur les posts trouvés
+    while ($query->have_posts()) {
+        $query->the_post();
+        $post_id = get_the_ID();
+
+        ?>
+        <div><a href="/formulaire/?id=<?php echo $post_id; ?>">En cours...</a></div>
+        <?php
+
+
+    }
+
+
+    // Réinitialiser la requête principale de WordPress
+    wp_reset_postdata();
 }
 
