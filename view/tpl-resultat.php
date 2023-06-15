@@ -100,27 +100,10 @@ if($_POST && isset($nbpoints) && !empty($nbpoints)):
         $post_data['content']=$content;
         
       if ( isset( $_POST['identifier'] ) && Ng1SondagePlugin::isTokenExists($_POST['identifier']) ) {
-          $id_post_to_update= Ng1SondagePlugin::response_is_already_in_db($_POST['identifier']);
-          Ng1SondagePlugin::acf_save_survey_reponse($id_post_to_update,$post_data);
-          update_field('pdf_content', Ng1SurveyUtilities::formatHTML("<page>".$reponse_html.'</page><page>'.$content."</page>"), $id_post_to_update);
-          $new_title = "Resulat - ".date("d M Y h:i:s"); // Remplacez "Nouveau titre" par le titre souhaité
-          // Changer le statut en "publish"
-            $post_data = array(
-                'ID'          => $id_post_to_update,
-                'post_status' => 'publish',
-                'post_title'    => date('d M Y H:i:s').' - Resultat', // Titre de la publication
-                'post_content' => $content,
-            );
-            wp_update_post( $post_data );
-            // Encoder le contenu SVG en base64
-            $svg_base64 = base64_encode($svg);
-            // Créer l'URL data URI pour le fichier SVG en base64
-            $svg_data_uri = 'data:image/svg+xml;base64,' . $svg_base64;
-            $svg_img='<img src="'.$svg_data_uri.'" alt="chart SVG">';
-            update_field('svg',$svg_img,$id_post_to_update);
-            // Modifier le titre
-           
-  
+            $id_post_to_update= Ng1SondagePlugin::response_is_already_in_db($_POST['identifier']);
+           $post_data['reponse_html']=$reponse_html;
+     
+            Ng1SondagePlugin::acf_save_survey_reponse($id_post_to_update,$post_data);
       } else {
           echo "Le nonce est invalide, gérer l'erreur";
       }

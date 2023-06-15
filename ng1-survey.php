@@ -162,7 +162,7 @@ class Ng1SondagePlugin {
           }
     
             // Mettre à jour le champ ACF PDF avec l'ID de l'attachment
-           // update_field('resultat_pdf', $attachment_id, $post_id);
+            update_field('resultat_pdf', $attachment_id, $post_id);
         }
     }
     public static function ng1_check_attachment_file_exist($filename){
@@ -206,7 +206,6 @@ class Ng1SondagePlugin {
     }
 
     public function save_form($data){
-        
         $already_exist = Ng1SondagePlugin::response_is_already_in_db($data['identifier']);
         $current=$data['current'];
         if(! $already_exist ){
@@ -631,7 +630,7 @@ class Ng1SondagePlugin {
         return $scores;
     }
     public static function acf_save_survey_reponse($post_id=false,$data=array()) {
-        if(!empty($data)){
+        if(empty($data)){
             return;
         }
         $current_user = wp_get_current_user();
@@ -658,7 +657,6 @@ class Ng1SondagePlugin {
                     update_field('form_data', $form_data, $post_id);
                     update_field('user',get_current_user_id(), $post_id);
                     update_field('form_id',$form_id, $post_id);
-                    
                     foreach ($data as $key => $value):
                         if (strpos($key, 'reponse_') === 0) {
                             // Effectuer l'update_field
@@ -699,7 +697,8 @@ class Ng1SondagePlugin {
                    $points_cat =Ng1SondagePlugin::calculateScoreByCategory($data);
                    update_field('score_by_cat', json_encode($points_cat ),$post_id);
                    $svg = Ng1SondagePlugin::generateSpiderChart($points_cat);
-
+                    update_field('pdf_content',Ng1SurveyUtilities::formatHTML("<page>".$content.'</page><page>'.$reponse_html."</page>"),$post_id);
+                    update_field('svg', $svg,$post_id);
                    $update = array(
                     'ID' => $post_id,
                     'post_title'    => date('d M Y H:i:s').' - Resultat', // Titre de la publication
