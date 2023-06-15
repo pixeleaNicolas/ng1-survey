@@ -38,9 +38,9 @@ foreach ($questions as $question) {
     ?>
 
     <div class="ng1-survey__question">
-        <small><?php echo $i; ?>.</small> <?php echo $question['question'] ?>
+        <small><?php echo $i; ?>.</small> <?php echo $question['question'] ?> <div class='goBackCorrectionJs' data-index='<?php echo $i; ?>'>Correction</div>
     </div>
-    <div class="ng1-survey__reponses">
+    <div class="ng1-survey__reponses block-reponse">
         <?php Ng1SondagePlugin::convertTextAreaToRadioButtons( $question['reponse'],"reponse_".$i,$i,$category_name,${"reponse_".$i},true); ?>
     </div>
 

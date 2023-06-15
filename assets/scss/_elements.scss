@@ -1,0 +1,41 @@
+%btn{
+
+    border-radius: var(--wp--custom--border--radius);
+    background-color: var(--wp--preset--color--second);
+    border-color: currentColor;
+    box-shadow: var(--wp--custom--shadow--medium);
+    padding: PxToRem(22) PxToRem(75);
+    cursor:pointer;
+      
+}
+
+    /* Styles pour les boutons radio */
+// %custom-radio {
+//     position: relative;
+//     display: inline-block;
+//     width: 40px;
+//     height: 40px;
+//     border-radius: 50%;
+//     background-color:var(--wp--preset--color--third);
+//     margin-right: 50px;
+//   }
+  
+//   /* Styles pour le point intérieur */
+//   %custom-radio::after {
+//     content: "";
+//     position: absolute;
+//     top: 50%;
+//     left: 50%;
+//     transform: translate(-50%, -50%);
+//     width: 30px;
+//     height: 30px;
+//     border-radius: 100%;
+//    background: var(--wp--preset--color--third);
+//     //border: 2px solid #ffffff;
+//   }
+  
+//   /* Styles pour le point intérieur lorsque le bouton est coché */
+//   %custom-radio input:checked + %custom-radio::after {
+//     background-color: var(--wp--preset--color--third);
+//   }
+  

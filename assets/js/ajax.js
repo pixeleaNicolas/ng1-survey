@@ -2,6 +2,7 @@
     
 
     function saveSurvey() {
+
         // Sérialiser le formulaire
         var formDataObj = new FormData($('#survey-form')[0]);
         var formData = $('#survey-form').serialize();
@@ -22,7 +23,7 @@
             filteredData[key] = formObject[key];
           }
         }
-      
+
         // Appeler la fonction AJAX pour enregistrer le formulaire
         $.ajax({
           url: myAjax.ajaxurl, // Utilisation de la variable ajaxurl
@@ -36,9 +37,13 @@
           },
           success: function(response) {
             // Afficher le message de succès
+           // $('.ng1-survey__loader').removeClass('active');
+   
             console.log(response.data);
           },
           error: function(xhr, status, error) {
+            alert('error');
+            console.log( status);
             // Afficher une erreur en cas d'échec
             console.log(error);
           }
@@ -53,9 +58,17 @@
       
         // Exécuter saveSurvey() lors de tout changement dans les boutons radio
         $('input[type="radio"]').change(function() {
-        $("#current").val($(this).data('index')+1);
+  
+          // Désélectionner tous les boutons radio du même groupe
+          $('input[name="' + $(this).attr('name') + '"]').closest('.ng1-survey__radio-group').removeClass('checked');
+          // Ajouter la classe "checked" au .ng1-survey__radio-group associé au bouton radio sélectionné
+          $(this).closest('.ng1-survey__radio-group').addClass('checked');
+          $('.ng1-survey__loader').addClass('active');
+        
+          $("#current").val($(this).data('index')+1);
           saveSurvey();
         });
+        
       });
       
 })(jQuery);

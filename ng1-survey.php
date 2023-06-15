@@ -6,7 +6,11 @@ Version: 1.0
 Author: GEHIN Nicolas
 License: GPLv2 or later
 */
+use Spipu\Html2Pdf\Html2Pdf;
+use Spipu\Html2Pdf\Exception\Html2PdfException;
+use Spipu\Html2Pdf\Exception\ExceptionFormatter;
 
+require_once 'Ng1SurveyUtilitiesClass.php';
 // Vérifier si le plugin ACF est actif avant d'initialiser le plugin de sondage
 if (class_exists('ACF')) {
     add_action('plugins_loaded', 'sondage_plugin_init');
@@ -14,19 +18,8 @@ if (class_exists('ACF')) {
 
 function sondage_plugin_init() {
 
-
-
     // Initialisation du plugin de sondage
     $sondage_plugin = new Ng1SondagePlugin();
-
-    // generation de pdf
-    //require_once plugin_dir_path(__FILE__) . 'ng1-wkhmltopdf.php';
-    //$inputURL = '<html><body><h1>Bravo !</h1></body></html>';
-    //$pdfGenerator = new Ng1Wkhtmltopdf($inputURL);
-
-
-
-
     $sondage_plugin->init();
 }
 
@@ -45,77 +38,154 @@ class Ng1SondagePlugin {
         add_action('init',  array($this,'create_custom_taxonomy'));
         add_action('acf/include_fields',  array($this,'generate_reponse_form'));
         add_shortcode('ng1_survey', array($this, 'ng1_survey_shortcode'));
-        register_activation_hook(__FILE__,  array($this,'create_validation_page'));
-        add_filter('the_content', array($this,'modify_validation_content'));
         add_action('wp_ajax_save_form', array($this,'save_form_ajax'));
         add_action('wp_ajax_nopriv_save_form', array($this,'save_form_ajax'));
+        add_action('save_post', array($this,'generate_pdf'),10,3);
     }
+   
 
-    /**
-     * Calcule la somme des valeurs d'un tableau.
-     *
-     * @param array $tableau Le tableau d'entiers.
-     * @return int La somme des valeurs du tableau.
-     */
+    public function ng1_survey_shortcode($atts) {
+        //shortcode : ng1_survey'
+        // Récupérer l'ID du formulaire à partir des attributs
+        $atts = shortcode_atts(array(
+            'id' => '',
+            'view' =>'form'
+        ), $atts);
+        $form_id = $atts['id'];
+        $view = $atts['view'];
+        if (is_user_logged_in()) {
+            // Utilisateur connecté, afficher le lien de déconnexion
+            $deconnexion_url = wp_logout_url();
+            echo '<a href="' . $deconnexion_url . '">Se déconnecter</a>';
+        }
+        if (!is_user_logged_in()) {
+            ob_start();
+            // Inclure le contenu du fichier du formulaire
+            include_once 'view/tpl-connexion.php';
+
+            return ob_get_clean();
+        }else if (! empty($form_id) && $view='form') {
+             // Code pour afficher et traiter le formulaire de sondage avec l'ID spécifié
+             $form_fields= get_fields($form_id);
+             $i=0;
+             ob_start();
+             // Inclure le contenu du fichier du formulaire
+             include_once 'view/tpl-form.php';
+          
+             return ob_get_clean();
+        }else if($view == 'validation'){
+            ob_start();
+            include_once 'view/tpl-validation.php';
+            return ob_get_clean();
+        }else if($view == 'myQuiz'){
+            ob_start();
+            include_once 'view/tpl-user-quiz.php';
+            return ob_get_clean();
+        }else if($view == 'resultat'){
+            ob_start();
+            include_once 'view/tpl-resultat.php';
+            return ob_get_clean();
+        }else if($view == 'single-resultat'){
+            ob_start();
+            include_once 'view/tpl-single-resultat.php';
+            return ob_get_clean();
+        }else if($view == 'reponse'){
+            ob_start();
+            include_once 'view/tpl-reponse-user.php';
+            return ob_get_clean();
+        }
+        return;
+    }
+    
+    
+    public function generate_pdf($post_id, $post, $update) {
+
+        // Vérifier si le post est de type 'reponse' et s'il ne s'agit pas d'une sauvegarde automatique
+        if (get_post_type($post_id) === 'reponse' && !wp_is_post_autosave($post_id) && !wp_is_post_revision($post_id)) {
+            // Création de l'instance Html2Pdf
+            $html2pdf = new HTML2PDF('P', 'A4', 'fr', true, 'UTF-8', array(20, 20, 20,20));
+            $html2pdf->pdf->SetAutoPageBreak(true, 15);
+            // ob_end_clean();
+            ob_start();
+        
+
+             include_once('view/tpl-pdf.php') ;
+       
+            $html = ob_get_clean();
+    
+            $html2pdf->writeHTML($html);
+
+            // Génération du nom de fichier unique
+            $filename = 'resultat_' . $post_id . '.pdf';
+            
+            // ID de l'utilisateur
+            $user_id = get_current_user_id();
+            
+            // Répertoire d'upload de WordPress
+            $upload_dir = wp_upload_dir();
+            $sub_folder = 'user_' . $user_id;
+            $upload_path = $upload_dir['path'] . '/'. $sub_folder ."_". $filename;
+            // Chemin complet du fichier
+          // $upload_path = $upload_dir['path'] . '/' . $sub_folder . '/' . $filename;
+          // 
+          // // Créer le sous-dossier s'il n'existe pas déjà
+          // if (!file_exists($upload_dir['basedir'] . '/' . $sub_folder)) {
+          //     wp_mkdir_p($upload_dir['basedir'] . '/' . $sub_folder);
+          //     chmod($upload_dir['basedir'] . '/' . $sub_folder, 0755); // Définir les permissions du dossier
+          // }
+            
+            // Enregistrer le fichier dans le dossier spécifié
+            $html2pdf->output($upload_path, 'F');
+    
+        // // Vérification si le fichier existe déjà dans la médiathèque
+        $existing_attachment = Ng1SondagePlugin::ng1_check_attachment_file_exist($filename);
+    
+    
+        if (!empty($existing_attachment)) {
+            // Mettre à jour le fichier existant dans la médiathèque
+            $attachment_id = $existing_attachment;
+        
+        } else {
+               // Créer un nouvel attachment dans la médiathèque
+    
+           $attachment_id = wp_insert_attachment(
+               array(
+                   'guid'           => $upload_dir['url']  . '/'. $sub_folder ."_". $filename,
+                   'post_mime_type' => 'application/pdf',
+                   'post_title'     => $filename,
+                   'post_content'   => '',
+                   'post_status'    => 'inherit'
+               ),
+               $upload_path,
+               $post_id
+           );
+          }
+    
+            // Mettre à jour le champ ACF PDF avec l'ID de l'attachment
+           // update_field('resultat_pdf', $attachment_id, $post_id);
+        }
+    }
+    public static function ng1_check_attachment_file_exist($filename){
+        return Ng1SurveyUtilities::ng1_check_attachment_file_exist($filename);
+    }
+    
     public static function sommeTableau($tableau) {
-        $somme = 0;
-        
-        foreach ($tableau as $value) {
-            $somme += $value;
-        }
-        
-        return $somme;
+        return  Ng1SurveyUtilities::sommeTableau($tableau);
     }
 
-    /**
-     * Décode une chaîne encodée et renvoie le résultat en tant que tableau associatif.
-     *
-     * @param string $input La chaîne encodée.
-     * @return array Le tableau associatif résultant du décodage.
-     */
     public static function inputDecode($input) {
-        $decodedString = strval(urldecode(mb_convert_encoding($input, 'UTF-8')));
-        return json_decode($decodedString, true);
+        return Ng1SurveyUtilities::inputDecode($input);
     }
-
-    /**
-     * Trouve la lettre ayant la plus grande somme pour chaque élément d'un tableau multidimensionnel.
-     *
-     * @param array $tableau Le tableau multidimensionnel.
-     * @return string La lettre ayant la plus grande somme.
-     */
+    public static function inputEncode($input) {
+        return Ng1SurveyUtilities::inputEncode($input);
+    }
     public static function getLettreMaxSomme($tableau) {
-        $lettres = array('A', 'B', 'C');
-        $sommes = array('A' => 0, 'B' => 0, 'C' => 0);
-    
-        foreach ($tableau as $element) {
-            foreach ($lettres as $lettre) {
-                $sommes[$lettre] += $element[$lettre];
-            }
-        }
-    
-        $lettreMaxSomme = '';
-        $maxSomme = 0;
-    
-        foreach ($sommes as $lettre => $somme) {
-            if ($somme > $maxSomme) {
-                $maxSomme = $somme;
-                $lettreMaxSomme = $lettre;
-            }
-        }
-    
-        return $lettreMaxSomme;
+        return Ng1SurveyUtilities::getLettreMaxSomme($tableau);
+    }
+    public static function enleverAvantTiret($chaine) {
+        return Ng1SurveyUtilities::enleverAvantTiret($chaine);
     }
 
-        
-    public static function enleverAvantTiret($chaine) {
-        $pos = strpos($chaine, "–");
-        if ($pos !== false) {
-            return mb_substr($chaine, $pos + 1, null, 'UTF-8');
-        }
-        return $chaine;
-    }
-        
         // Fonction pour enregistrer le formulaire en cours via AJAX
     public function save_form_ajax() {
         // Vérifier la requête AJAX
@@ -136,8 +206,9 @@ class Ng1SondagePlugin {
     }
 
     public function save_form($data){
+        
         $already_exist = Ng1SondagePlugin::response_is_already_in_db($data['identifier']);
-    $current=$data['current'];
+        $current=$data['current'];
         if(! $already_exist ){
             $post_args = array(
                 'post_title'    => date('d M Y H:i:s').' - En cours ', // Titre de la publication
@@ -165,67 +236,14 @@ class Ng1SondagePlugin {
         }
     }
     public static function generateUniqueToken() {
-        // Générer un jeton unique
-        $token = bin2hex(random_bytes(16));
-    
-        // Chemin vers le fichier texte contenant les jetons
-        $tokenFile = WP_PLUGIN_DIR . '/ng1-survey/temp/tokens.txt';
-    
-        // Vérifier si le jeton généré existe déjà
-        while (Ng1SondagePlugin::isTokenExists($token, $tokenFile)) {
-            $token = bin2hex(random_bytes(16));
-        }
-    
-        // Ajouter le jeton généré à la liste des jetons existants
-        file_put_contents($tokenFile, $token . PHP_EOL, FILE_APPEND);
-    
-        // Retourner le jeton unique
-        return $token;
+        return Ng1SurveyUtilities::generateUniqueToken();
     }
     
     public static function isTokenExists($token, $tokenFile=WP_PLUGIN_DIR . '/ng1-survey/temp/tokens.txt') {
-        // Lire les jetons déjà présents dans le fichier
-        $existingTokens = file($tokenFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    
-        // Vérifier si le jeton existe déjà
-        return in_array($token, $existingTokens);
+       return Ng1SurveyUtilities::isTokenExists($token, $tokenFile);
     }
     
-    public function ng1_survey_shortcode($atts) {
-        //shortcode : ng1_survey'
-        // Récupérer l'ID du formulaire à partir des attributs
-        $atts = shortcode_atts(array(
-            'id' => '',
-            'view' =>'form'
-        ), $atts);
-        $form_id = $atts['id'];
-        $view = $atts['view'];
 
-        // Vérifier si l'ID du formulaire est spécifié
-        if (! empty($form_id) && $view='form') {
-             // Code pour afficher et traiter le formulaire de sondage avec l'ID spécifié
-             $form_fields= get_fields($form_id);
-             $i=0;
-             ob_start();
-             // Inclure le contenu du fichier du formulaire
-             include_once 'view/tpl-form.php';
-
-             return ob_get_clean();
-        }else if($view == 'myQuiz'){
-            ob_start();
-            include_once 'view/tpl-user-quiz.php';
-            return ob_get_clean();
-        }else if($view == 'resultat'){
-            ob_start();
-            include_once 'view/tpl-resultat.php';
-            return ob_get_clean();
-        }else if($view == 'reponse'){
-            ob_start();
-            include_once 'view/tpl-reponse-user.php';
-            return ob_get_clean();
-        }
-        return;
-    }
     /**
  * Remplace les derniers caractères d'une chaîne.
  *
@@ -381,6 +399,7 @@ class Ng1SondagePlugin {
  */
     public static function show_form_response($response_acf_group_key, $reponse_id,$reponse_value) {
     $fields = acf_get_fields($response_acf_group_key); // Récupérer les champs du groupe
+   
 
     foreach ($fields as $field) {
         extract($field); // Extraction des variables du tableau $field
@@ -410,7 +429,7 @@ class Ng1SondagePlugin {
             }
         }
     }
-    
+    return;
     }
     public function enqueue_scripts() {
         // Enregistrer et charger les scripts et les styles nécessaires pour le sondage
@@ -454,8 +473,8 @@ class Ng1SondagePlugin {
                         $attr_readonly='';
                     } 
                 ?>
-                <div>
-                    <label class="ng1-survey__label" for="<?php echo $name . '_' . $value; ?>">
+                <div class='ng1-survey__radio-group   <?php if(!empty($check)):?>checked<?php endif; ?>'>
+                    <label class="ng1-survey__label ng1-survey__radio-group__wrapper" for="<?php echo $name . '_' . $value; ?>">
                     <?php if($attr_readonly):?>
                         <div class="ng1-survey__radio ng1-survey__radio_div <?php echo $check; ?>">
                         <?php if(!empty($check)):?>
@@ -468,7 +487,7 @@ class Ng1SondagePlugin {
                     </div>
                     <?php else: ?>
                         <input  class="ng1-survey__radio" type="radio" data-index="<?php echo $question_nb; ?>" data-cat='<?php echo $cat; ?>' name="<?php echo $name; ?>" value="<?php echo $value; ?>" <?php echo $check; ?> id="<?php echo $name . '_' . $value; ?>">
-                        <input  type="hidden"  value='<?php echo $cat; ?>' name="<?php echo 'cat_'.$name; ?>" >
+                        <input  class="btn_submit" type="hidden"  value='<?php echo $cat; ?>' name="<?php echo 'cat_'.$name; ?>" >
                         <?php echo $label; ?>
                         <?php endif; ?>
                     </label>
@@ -478,7 +497,34 @@ class Ng1SondagePlugin {
         }
     }
  
-
+    public static function convertTextAreaToReponses($textareaValue, $name, $question_nb = "1", $cat = '', $val = '', $readonly = false, $post_id = false) {
+        $lines = explode("\n", $textareaValue);
+    
+        foreach ($lines as $index => $line) {
+            $line = trim($line);
+    
+            if ($line !== '') {
+                $parts = explode(':', $line);
+                $value = trim($parts[0]);
+                $label = trim($parts[1]);
+                if (!empty($post_id)) {
+                    $val = get_field($name, $post_id);
+                }
+    
+                $class = '';
+                $style="";
+                if ($val == $value) {
+                    $class = 'selected';
+                    $style='';
+                }
+                ?>
+                <p class="ng1-survey__paragraph <?php echo $class; ?>" <?php echo $style; ?>><?php echo $label; ?></p>
+                <?php
+            }
+        }
+    }
+    
+ 
     
     public static function response_is_already_in_db($identifier) {
 
@@ -584,11 +630,11 @@ class Ng1SondagePlugin {
         
         return $scores;
     }
-    public static function acf_save_survey_reponse($post_id=false,$data) {
+    public static function acf_save_survey_reponse($post_id=false,$data=array()) {
+        if(!empty($data)){
+            return;
+        }
         $current_user = wp_get_current_user();
-
-
-
         extract($data);
         // Vérifiez si les données du formulaire ont été soumises
         if (!empty($form_data)) {
@@ -730,25 +776,67 @@ class Ng1SondagePlugin {
     
         register_taxonomy($taxonomy, array(), $args);
     }
+/**
+ * Récupère la catégorie d'un sondage.
+ *
+ * @param array|string $categorie_array_or_id Tableau d'ID de catégories ou ID de catégorie.
+ * @return string|null Nom de la catégorie du sondage ou null si la catégorie n'est pas trouvée.
+ */
+public static function get_survey_category($categorie_array_or_id) {
+    if (empty($categorie_array_or_id)) {
+        return null;
+    }
+
+    if (is_array($categorie_array_or_id)) {
+        $category_id = $categorie_array_or_id[0];
+        $category = get_term_by('id', $category_id, 'categorie_question');
+    } else if (is_string($categorie_array_or_id)) {
+        $category = get_term_by('id', $categorie_array_or_id, 'categorie_question');
+    }
+
+    if ($category) {
+        return $category->name;
+    }
+
+    return null;
+}
+
 
     public function register_post_type_reponse() {
         $labels = array(
             'name' => 'Réponses',
             'singular_name' => 'Reponse',
         );
-
+        
+        $capabilities = array(
+            'edit_post' => 'edit_reponse',
+            'read_post' => 'read_reponse',
+            'delete_post' => 'delete_reponse',
+            'edit_posts' => 'edit_reponses',
+            'edit_others_posts' => 'edit_others_reponses',
+            'publish_posts' => 'publish_reponses',
+            'read_private_posts' => 'read_private_reponses',
+            'delete_posts' => 'delete_reponses',
+            'delete_private_posts' => 'delete_private_reponses',
+            'delete_published_posts' => 'delete_published_reponses',
+            'delete_others_posts' => 'delete_others_reponses',
+            'edit_private_posts' => 'edit_private_reponses',
+            'edit_published_posts' => 'edit_published_reponses',
+            'create_posts' => 'create_reponses',
+        );
+        
         $args = array(
             'labels' => $labels,
+            'capability_type' => 'reponse',
+            'capabilities' => $capabilities,
             'public' => true,
-            'rewrite' => false,
+            'rewrite' => array('slug' => 'reponse'),
             'show_ui' => true,
             'show_in_menu' => true,
-            'rewrite' => array('slug' => 'reponse'),
-           'show_in_rest' =>true,
-           
+            'show_in_rest' => true,
             // Ajoutez d'autres arguments selon vos besoins
         );
-
+        
         register_post_type('reponse', $args);
     }
 
@@ -770,25 +858,7 @@ class Ng1SondagePlugin {
             $page_id = wp_insert_post($page_args);
         }
     }
-    function modify_validation_content($content) {
-        // Vérifiez si c'est la page que vous souhaitez modifier en fonction de son ID, de son slug ou d'autres critères
-        if (is_page('validation')) {
-            ob_start();
-            /* ?>
-            <pre><?php var_dump($_POST); ?></pre>
 
-            <?php */
-            include_once "validation.php";
-            // Modifiez le contenu de la page ici
-            $modified_content =ob_get_clean();
-    
-            // Retournez le contenu modifié
-            return $modified_content;
-        }
-    
-        // Si ce n'est pas la page que vous souhaitez modifier, retournez le contenu tel quel
-        return $content;
-    }
     function show_response($json){
         
     }
@@ -812,7 +882,7 @@ class Ng1SondagePlugin {
 
     
     // Génération du code SVG
-    $svg = '<svg width="600" height="500" xmlns="http://www.w3.org/2000/svg">';
+    $svg = '<svg width="600" height="500"  viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg">';
 
     // Récupération des clés du tableau
     $keys = array_keys($data);
@@ -842,12 +912,91 @@ class Ng1SondagePlugin {
         $coords = Ng1SondagePlugin::polarToCartesian($angle, $radius, $chartCenterX, $chartCenterY);
         $points .= $coords['x'] . ',' . $coords['y'] . ' ';
     }
-    $svg .= '<polygon points="' . $points . '" style="fill: rgba(0, 0, 255, 0.5);" />';
+    $svg .= '<polygon points="' . $points . '" style="fill: var(--wp--preset--color--second);opacity:.3" />';
 
     $svg .= '</svg>';
 
     // Retourner le code SVG
     return $svg;
     }
-   
+    public static function generateSpiderChartDraw($data) {
+
+        // Paramètres du graphique
+        $chartRadius = 100; // Rayon du graphique
+        $chartCenterX = 300; // Coordonnée X du centre du graphique
+        $chartCenterY = 250; // Coordonnée Y du centre du graphique
+    
+        // Calcul de l'angle entre chaque catégorie
+        $angleStep = 360 / count($data);
+    
+        // Génération du code Draw
+        $draw = '<draw>';
+      
+        // Récupération des clés du tableau
+        $keys = array_keys($data);
+    
+        // Dessin des lignes du graphique
+        foreach ($keys as $index => $key) {
+            $angle = $index * $angleStep;
+            $startCoords = self::polarToCartesian($angle, 0, $chartCenterX, $chartCenterY); // Point de départ à l'intérieur du graphique
+            //$endCoords = polarToCartesian($angle, $data[$key] * $chartRadius . , $chartCenterX, $chartCenterY); // Point d'arrivée en fonction de la valeur
+            $endCoords = self::polarToCartesian($angle, $chartRadius + 100, $chartCenterX, $chartCenterY); // Point d'arrivée en fonction de la valeur
+            $draw .= '<line x1="' . $startCoords['x'] . '" y1="' . $startCoords['y'] . '" x2="' . $endCoords['x'] . '" y2="' . $endCoords['y'] . '" stroke="rgba(55,55,55,.3)" stroke-width="1" />';
+    
+            // Positionnement du texte de catégorie
+            $textCoords = self::polarToCartesian($angle, $chartRadius + 100, $chartCenterX + 20, $chartCenterY + 20);
+            $draw .= '<text x="' . $textCoords['x'] . '" y="' . $textCoords['y'] . '" text-anchor="middle">' . $key . '</text>';
+    
+            // Dessin de l'échelle
+            //$scaleCoords = polarToCartesian($angle, $chartRadius + 10, $chartCenterX, $chartCenterY);
+            //$scaleEndCoords = polarToCartesian($angle, $chartRadius + 30, $chartCenterX, $chartCenterY);
+            //$draw .= '<line x1="' . $scaleCoords['x'] . '" y1="' . $scaleCoords['y'] . '" x2="' . $scaleEndCoords['x'] . '" y2="' . $scaleEndCoords['y'] . '" style="stroke: rgba(55,55,55,.3); stroke-width: 1;" />';
+        }
+    
+        // Dessin des polygones représentant les valeurs
+        $points = '';
+        foreach ($keys as $index => $key) {
+            $angle = $index * $angleStep;
+            $radius = ($data[$key] / 10) * $chartRadius; // Normalisation de la valeur entre 0 et 1
+            $coords = self::polarToCartesian($angle, $radius, $chartCenterX, $chartCenterY);
+            $points .= $coords['x'] . ',' . $coords['y'] . ' ';
+        }
+        $draw .= '<polygon points="' . $points . '" fill="var(--wp--preset--color--second)" opacity=".3" />';
+    
+        $draw .= '</draw>';
+    
+        // Retourner le code Draw
+        return $draw;
+    }
+    public static function svgToDraw($svg) {
+        // Remplacer la balise <svg> par <draw>
+        $draw = str_replace('<svg', '<draw', $svg);
+        // Remplacer les balises </svg> par </draw>
+        $draw = str_replace('</svg>', '</draw>', $draw);
+    
+        // Remplacer les balises <line> par <path>
+        $draw = str_replace('<line', '<path', $draw);
+        // Supprimer l'attribut x1
+        $draw = str_replace(' x1="', ' d="M', $draw);
+        // Remplacer l'attribut y1 par L
+        $draw = str_replace('" y1="', ' L', $draw);
+        // Supprimer l'attribut x2
+        $draw = str_replace('" x2="', ' ', $draw);
+        // Remplacer l'attribut y2 par Z"
+        $draw = str_replace('" y2="', ' Z"', $draw);
+      
+        // Remplacer les balises <text> par <label>
+        $draw = str_replace('<text', '<label', $draw);
+        // Supprimer l'attribut text-anchor
+        $draw = preg_replace('/ text-anchor="[^"]+"/', '', $draw);
+    
+        // Remplacer les balises <polygon> par <path>
+        $draw = str_replace('<polygon', '<path', $draw);
+        // Supprimer l'attribut points
+        $draw = preg_replace('/ points="([^"]+)"/', ' d="M$1 Z"', $draw);
+        // Remplacer l'attribut fill par fill-color
+        $draw = str_replace(' fill="', ' fill-color="', $draw);
+    
+        return $draw;
+    }
 }

@@ -19,7 +19,7 @@ if(!empty($nbpoints)): ?>
             }
     } ?>
     <div class="ng1-survey__chart"> 
-       <pre><?php var_dump( $resultat_par_categorie); ?></pre>
+    
         <?php echo $svgChart = Ng1SondagePlugin::generateSpiderChart($points_cat); ?>
     </div>  
     <?php endif;?>  
