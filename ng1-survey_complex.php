@@ -162,7 +162,7 @@ class Ng1SondagePlugin {
           }
     
             // Mettre à jour le champ ACF PDF avec l'ID de l'attachment
-           // update_field('resultat_pdf', $attachment_id, $post_id);
+           update_field('resultat_pdf', $attachment_id, $post_id);
         }
     }
     public static function ng1_check_attachment_file_exist($filename){
