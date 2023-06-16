@@ -44,13 +44,15 @@
         margin-right: auto;margin-left: auto;
         background: white;
         position: relative;
-.btn_submit{
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform:translateY(50%) translateX(-50%);
-}
-     
+        .btn_submit{
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform:translateY(50%) translateX(-50%);
+            @include m(600){
+                transform:translateY(70%) translateX(-50%);
+            }
+        }
     }
     &__radio-group{
         border:var(--wp--custom--border--default);
@@ -68,7 +70,7 @@
             }
         }
         &:nth-of-type(3){
-            border-color: var(--wp--preset--color--fourth);
+            border-color: var(--wp--preset--color--fourth); 
             .ng1-survey__radio-group__wrapper:hover{
                 background-color: var(--wp--preset--color--fourth);
             }
@@ -93,6 +95,20 @@
             }
         }
     }
+    &__items{
+        @include m(1350){
+         padding-right: 50px;
+         padding-left:50px;
+        }
+        @include m(750){
+         padding-left: 30px;
+         padding-right: 30px;
+        }
+        @include m(600){
+            padding-left: 0;
+            padding-right: 0;
+           }
+    }
     &__item{
         &__category{
             display: inline-flex;
@@ -100,6 +116,12 @@
             position: absolute;
             top:0;
             left:-50px;
+            @include m(800){
+             left: -20px;
+            }
+            @include m(600){
+             padding: 1rem;
+            }
             @extend %btn;
             background-color: var(--wp--preset--color--fourth);
             color:white;
@@ -107,6 +129,11 @@
         }
         &__question{
             font-size: var(--wp--preset--font-size--x-large);
+            @include m(600){
+                font-size: var(--wp--preset--font-size--large);
+                padding-top: 20px;
+                padding-bottom: 30px;
+            }
         }
         &__label{
             color: var(--wp--preset--color--fourth);
@@ -123,24 +150,41 @@
             color:white;
             z-index: 100;
             transform:var(--wp--custom--transform--rotate-1) translateY(70%);
+            @include m(800){
+             padding: 1.2rem;
+            }
         }
         &__pagination{
             display: flex;
+            flex-wrap: wrap;
             justify-content: center;
             width: fit-content;
             margin-right: auto;
             margin-left: auto;
+            &__txt{
+                @include m(800){
+                 display: none;
+                }
+            }
         }
         &__row{
             margin-top: 50px;
             margin-bottom: 50px;
             &_2{
+                @include p(800){
                 border:var(--wp--custom--border--default);
                 padding:var(--wp--custom--padding--group);
-                border-radius:var(--wp--custom--border--radius);
+             
+                 border-radius:var(--wp--custom--border--radius);
+               }
                 border-color: var(--wp--preset--color--second);
                 background: white;
                 padding-bottom: 3px !important;
+            }
+            &_1{
+                @include m(600){
+                 flex-wrap: wrap;
+                }
             }
         }
         &__col{
@@ -148,6 +192,8 @@
             padding:var(--wp--custom--padding--group);
 
              &_1{
+
+
                 background: white;
                 flex-grow: 1; /* Le premier élément prendra toute la place restante */
                 border:var(--wp--custom--border--default);
@@ -156,8 +202,26 @@
                 box-shadow: var(--wp--custom--shadow--large);
                 min-height: 90px;
                 padding-top: 60px;
+
              }
              &_2{
+                .ng1-survey__item__row_1 &{
+                    @include m(900){
+                        width: 100%;
+                        min-width: 300px;
+                        display: flex;
+                        flex-wrap: wrap;
+                        flex-direction: row;
+
+                        margin: 30px 0;
+                        .btn{
+                            font-size: 11px;
+                            svg{
+                                display: none;
+                            }
+                        }
+                    }
+                }
                 width: 300px;
                 margin-left: 30px;
                 display: flex;
@@ -177,16 +241,23 @@
     @extend %btn;
     display: inline-flex;
     justify-content: space-between;
+
     padding: PxToRem(23) PxToRem(27) PxToRem(27) PxToRem(27);
     color:white;
     background-color: var(--wp--preset--color--fourth);
     &_prev,&_next{
+        justify-content: center;
+        align-items: center;
+        padding: 1rem 0.6rem !important;
+    @include p(800){
         margin-right: 2rem;
         margin-left: 2rem;
-     align-items: center;
-        width: 10rem;
-        max-width: 50%;    
-                 padding: 1rem 0.6rem !important;
+         width: 10rem;
+         max-width: 50%;    
+         justify-content: space-between;
+   }
+        
+           
                  svg{
                  height: 2rem !important;
                  width: 3px;
@@ -204,8 +275,10 @@
     }
     &_next{
        svg{
+        @include p(800){
            margin-right: 0 !important;
            margin-left: 10px;
+        }
        }
     }
     &:nth-of-type(2){
@@ -213,8 +286,9 @@
     }
 
     svg{
+       @include p(800){
         margin-right: 10px;
-       
+       } 
         height: 20px;
         width: auto;
      
@@ -236,27 +310,31 @@
 
 
 .ng1-survey__label{
+    position: relative;
+    @include p(600){
+      padding-left: 90px;
+    }
     input[type='radio']{
         display: none;
      }
-    padding-left: 90px;
-    position: relative;
+
+
 
     &:before,&:after{
         content: "";
         border: 1px solid var(--wp--preset--color--third);
         position: absolute;
-        top: 50%;
-        left: 50px;
+        top: 15px;
+        left: 15px ;
         transform: translateX(-50%) translateY(-50%);
         width: 30px;
         height: 30px;
         border-radius: 100%;
         background: white;
-
-       //.ng1-survey__radio-group.checked &{
-       //     background: var(--wp--preset--color--first);
-       //  }
+        @include p(600){
+            left: 50px;
+            top: 50%;
+        }
     }
     &:after{
         width: 24px;
@@ -311,19 +389,35 @@
 //    position:fixed;
 //}
 .resultat{
-
+    @include p(600){
+        padding: 0 30px;
+    }
     &__col:first-of-type{
         flex-grow: 1;
+       @include p(500){
+         min-width: 450px;
+       }
         
     }
     &__col:last-of-type{
-     max-width: 450px;     
+    width: 100%;
+     display: flex;
+     justify-content: center;
     }
 
     svg{
-        max-width: 100%;
+        width: 450px;
+        @include m(500){
+            width: 100%;
+         max-width: 90%;
+        }
+      
     }
     &__cols{
+
+        @include m(1024){
+         flex-wrap: wrap;
+        }
         position: relative;
         display: flex;
 
@@ -342,7 +436,10 @@
         border-radius:var(--wp--custom--border--radius);
         border-color: var(--wp--preset--color--second);
         padding:var(--wp--custom--padding--group);
-        margin:30px;
+        margin-top: 10px;
+     @include p(900){
+         margin:30px;
+     }
         background: white;
         max-width: 390px;
         display: flex;
@@ -364,4 +461,31 @@
     text-align: center;
     margin-bottom: 50px;
     margin-top: 50px;
+}
+
+
+.content-validation{
+    .ng1-survey{
+        &__item_categorie{
+            padding-left: 0;
+        }
+        &__label{
+            padding: 1rem 0 1rem .5rem;
+            &:before,&:after{
+                display: none;
+            }
+            .checked{
+                color:var(--wp--preset--color--second);
+            }
+        }
+        &__question{
+            padding-left: 0;
+            color:var(--wp--preset--color--fourth);
+        }
+    }
+}
+.btn_2{
+    @extend %btn;
+    color:white;
+    
 }

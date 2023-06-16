@@ -1,14 +1,19 @@
 @charset "UTF-8";
-.btn_submit, .btn, .btn_small, .ng1-survey__item__counter, .ng1-survey__item__category {
+.btn_2, .btn_submit, .btn, .btn_small, .ng1-survey__item__counter, .ng1-survey__item__category {
+  text-transform: uppercase;
   border-radius: var(--wp--custom--border--radius);
   background-color: var(--wp--preset--color--second);
   border-color: currentColor;
   box-shadow: var(--wp--custom--shadow--medium);
   padding: 1.375rem 4.6875rem;
+  transition: all 0.5s;
+  text-decoration: none;
   cursor: pointer;
 }
+.btn_2:hover, .btn_submit:hover, .btn:hover, .btn_small:hover, .ng1-survey__item__counter:hover, .ng1-survey__item__category:hover {
+  background-color: var(--wp--preset--color--first);
+}
 
-/* Styles pour les boutons radio */
 .ng1-survey__loader {
   transition: opacity 1s;
   visibility: hidden;
@@ -58,6 +63,11 @@
   left: 50%;
   transform: translateY(50%) translateX(-50%);
 }
+@media (max-width: 600px) {
+  .ng1-survey__message .btn_submit {
+    transform: translateY(70%) translateX(-50%);
+  }
+}
 .ng1-survey__radio-group {
   border: var(--wp--custom--border--default);
   border-radius: var(--wp--custom--border--radius);
@@ -99,6 +109,24 @@
 .ng1-survey__radio-group__wrapper:nth-of-type(3) {
   background-color: var(--wp--preset--color--fourth);
 }
+@media (max-width: 1350px) {
+  .ng1-survey__items {
+    padding-right: 50px;
+    padding-left: 50px;
+  }
+}
+@media (max-width: 750px) {
+  .ng1-survey__items {
+    padding-left: 30px;
+    padding-right: 30px;
+  }
+}
+@media (max-width: 600px) {
+  .ng1-survey__items {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
 .ng1-survey__item__category {
   display: inline-flex;
   transform: var(--wp--custom--transform--rotate-1) translateY(-50%);
@@ -109,8 +137,25 @@
   color: white;
   box-shadow: var(--wp--custom--shadow--light);
 }
+@media (max-width: 800px) {
+  .ng1-survey__item__category {
+    left: -20px;
+  }
+}
+@media (max-width: 600px) {
+  .ng1-survey__item__category {
+    padding: 1rem;
+  }
+}
 .ng1-survey__item__question {
   font-size: var(--wp--preset--font-size--x-large);
+}
+@media (max-width: 600px) {
+  .ng1-survey__item__question {
+    font-size: var(--wp--preset--font-size--large);
+    padding-top: 20px;
+    padding-bottom: 30px;
+  }
 }
 .ng1-survey__item__label {
   color: var(--wp--preset--color--fourth);
@@ -128,25 +173,45 @@
   z-index: 100;
   transform: var(--wp--custom--transform--rotate-1) translateY(70%);
 }
+@media (max-width: 800px) {
+  .ng1-survey__item__counter {
+    padding: 1.2rem;
+  }
+}
 .ng1-survey__item__pagination {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   width: -moz-fit-content;
   width: fit-content;
   margin-right: auto;
   margin-left: auto;
 }
+@media (max-width: 800px) {
+  .ng1-survey__item__pagination__txt {
+    display: none;
+  }
+}
 .ng1-survey__item__row {
   margin-top: 50px;
   margin-bottom: 50px;
 }
 .ng1-survey__item__row_2 {
-  border: var(--wp--custom--border--default);
-  padding: var(--wp--custom--padding--group);
-  border-radius: var(--wp--custom--border--radius);
   border-color: var(--wp--preset--color--second);
   background: white;
   padding-bottom: 3px !important;
+}
+@media (min-width: 800px) {
+  .ng1-survey__item__row_2 {
+    border: var(--wp--custom--border--default);
+    padding: var(--wp--custom--padding--group);
+    border-radius: var(--wp--custom--border--radius);
+  }
+}
+@media (max-width: 600px) {
+  .ng1-survey__item__row_1 {
+    flex-wrap: wrap;
+  }
 }
 .ng1-survey__item__col {
   position: relative;
@@ -170,6 +235,22 @@
   justify-content: space-between;
   padding: 0;
 }
+@media (max-width: 900px) {
+  .ng1-survey__item__row_1 .ng1-survey__item__col_2 {
+    width: 100%;
+    min-width: 300px;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    margin: 30px 0;
+  }
+  .ng1-survey__item__row_1 .ng1-survey__item__col_2 .btn, .ng1-survey__item__row_1 .ng1-survey__item__col_2 .btn_small {
+    font-size: 11px;
+  }
+  .ng1-survey__item__row_1 .ng1-survey__item__col_2 .btn svg, .ng1-survey__item__row_1 .ng1-survey__item__col_2 .btn_small svg {
+    display: none;
+  }
+}
 .ng1-survey__item__cols {
   display: flex;
 }
@@ -182,12 +263,18 @@
   background-color: var(--wp--preset--color--fourth);
 }
 .btn_prev, .btn_next {
-  margin-right: 2rem;
-  margin-left: 2rem;
+  justify-content: center;
   align-items: center;
-  width: 10rem;
-  max-width: 50%;
   padding: 1rem 0.6rem !important;
+}
+@media (min-width: 800px) {
+  .btn_prev, .btn_next {
+    margin-right: 2rem;
+    margin-left: 2rem;
+    width: 10rem;
+    max-width: 50%;
+    justify-content: space-between;
+  }
 }
 .btn_prev svg, .btn_next svg {
   height: 2rem !important;
@@ -200,17 +287,23 @@
 .btn_prev svg {
   transform: rotate(180deg);
 }
-.btn_next svg {
-  margin-right: 0 !important;
-  margin-left: 10px;
+@media (min-width: 800px) {
+  .btn_next svg {
+    margin-right: 0 !important;
+    margin-left: 10px;
+  }
 }
 .btn:nth-of-type(2), .btn_small:nth-of-type(2) {
   background-color: var(--wp--preset--color--first);
 }
 .btn svg, .btn_small svg {
-  margin-right: 10px;
   height: 20px;
   width: auto;
+}
+@media (min-width: 800px) {
+  .btn svg, .btn_small svg {
+    margin-right: 10px;
+  }
 }
 .btn_small {
   padding: 22px;
@@ -225,8 +318,12 @@
 }
 
 .ng1-survey__label {
-  padding-left: 90px;
   position: relative;
+}
+@media (min-width: 600px) {
+  .ng1-survey__label {
+    padding-left: 90px;
+  }
 }
 .ng1-survey__label input[type=radio] {
   display: none;
@@ -235,13 +332,19 @@
   content: "";
   border: 1px solid var(--wp--preset--color--third);
   position: absolute;
-  top: 50%;
-  left: 50px;
+  top: 15px;
+  left: 15px;
   transform: translateX(-50%) translateY(-50%);
   width: 30px;
   height: 30px;
   border-radius: 100%;
   background: white;
+}
+@media (min-width: 600px) {
+  .ng1-survey__label:before, .ng1-survey__label:after {
+    left: 50px;
+    top: 50%;
+  }
 }
 .ng1-survey__label:after {
   width: 24px;
@@ -284,18 +387,41 @@
   padding-left: 90px;
 }
 
+@media (min-width: 600px) {
+  .resultat {
+    padding: 0 30px;
+  }
+}
 .resultat__col:first-of-type {
   flex-grow: 1;
 }
+@media (min-width: 500px) {
+  .resultat__col:first-of-type {
+    min-width: 450px;
+  }
+}
 .resultat__col:last-of-type {
-  max-width: 450px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 .resultat svg {
-  max-width: 100%;
+  width: 450px;
+}
+@media (max-width: 500px) {
+  .resultat svg {
+    width: 100%;
+    max-width: 90%;
+  }
 }
 .resultat__cols {
   position: relative;
   display: flex;
+}
+@media (max-width: 1024px) {
+  .resultat__cols {
+    flex-wrap: wrap;
+  }
 }
 
 .quizz-resultat__items {
@@ -309,12 +435,17 @@
   border-radius: var(--wp--custom--border--radius);
   border-color: var(--wp--preset--color--second);
   padding: var(--wp--custom--padding--group);
-  margin: 30px;
+  margin-top: 10px;
   background: white;
   max-width: 390px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+@media (min-width: 900px) {
+  .quizz-resultat__item {
+    margin: 30px;
+  }
 }
 .quizz-resultat__item a:first-of-type {
   flex-grow: 1;
@@ -328,4 +459,25 @@
   text-align: center;
   margin-bottom: 50px;
   margin-top: 50px;
+}
+
+.content-validation .ng1-survey__item_categorie {
+  padding-left: 0;
+}
+.content-validation .ng1-survey__label {
+  padding: 1rem 0 1rem 0.5rem;
+}
+.content-validation .ng1-survey__label:before, .content-validation .ng1-survey__label:after {
+  display: none;
+}
+.content-validation .ng1-survey__label .checked {
+  color: var(--wp--preset--color--second);
+}
+.content-validation .ng1-survey__question {
+  padding-left: 0;
+  color: var(--wp--preset--color--fourth);
+}
+
+.btn_2 {
+  color: white;
 }

@@ -238,15 +238,15 @@
           });
             $('#survey-form').submit(function(event) {
          
-              event.preventDefault(); // Empêche le formulaire de se soumettre normalement
-              var actionValue = $('.form-action').filter(':focus').data('action');
+            // event.preventDefault(); // Empêche le formulaire de se soumettre normalement
+            // var actionValue = $('.form-action').filter(':focus').data('action');
 
-              if (actionValue) {
-                  $(this).attr('action', actionValue);
-              } else {
-                  // Action par défaut si aucun bouton n'est sélectionné
-                  $(this).attr('action', 'defaultAction.php');
-              }
+            // if (actionValue) {
+            //     $(this).attr('action', actionValue);
+            // } else {
+            //     // Action par défaut si aucun bouton n'est sélectionné
+            //     $(this).attr('action', 'defaultAction.php');
+            // }
               var reponseValues = [];
               $('input[type="radio"][name^="reponse_"]:checked').each(function() {
                 var question_number = $(this).data('index');

@@ -1,3 +1,4 @@
+<div class="resultat">    
 <?php 
 extract($_POST);
 
@@ -116,3 +117,5 @@ if($_POST && isset($nbpoints) && !empty($nbpoints)):
 <p>Votre nombre de points ne permet pas de donner de résultats.</p>
 <?php
 endif;
+?>
+</div>

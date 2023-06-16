@@ -41,6 +41,8 @@ class Ng1SondagePlugin {
         add_action('wp_ajax_save_form', array($this,'save_form_ajax'));
         add_action('wp_ajax_nopriv_save_form', array($this,'save_form_ajax'));
         add_action('save_post', array($this,'generate_pdf'),10,3);
+              // Ajouter le hook pour exécuter la fonction lors de la création du menu d'administration
+      add_action('init', array($this,'create_admin_message_page'),10);
     }
    
 
@@ -53,11 +55,7 @@ class Ng1SondagePlugin {
         ), $atts);
         $form_id = $atts['id'];
         $view = $atts['view'];
-        if (is_user_logged_in()) {
-            // Utilisateur connecté, afficher le lien de déconnexion
-            $deconnexion_url = wp_logout_url();
-            echo '<a href="' . $deconnexion_url . '">Se déconnecter</a>';
-        }
+
         if (!is_user_logged_in()) {
             ob_start();
             // Inclure le contenu du fichier du formulaire
@@ -139,7 +137,7 @@ class Ng1SondagePlugin {
     
         // // Vérification si le fichier existe déjà dans la médiathèque
         $existing_attachment = Ng1SondagePlugin::ng1_check_attachment_file_exist($filename);
-    
+        $attachment_file = $upload_dir['url']  . '/'. $sub_folder ."_". $filename;
     
         if (!empty($existing_attachment)) {
             // Mettre à jour le fichier existant dans la médiathèque
@@ -147,10 +145,10 @@ class Ng1SondagePlugin {
         
         } else {
                // Créer un nouvel attachment dans la médiathèque
-    
+              
            $attachment_id = wp_insert_attachment(
                array(
-                   'guid'           => $upload_dir['url']  . '/'. $sub_folder ."_". $filename,
+                   'guid'           => $attacment_file,
                    'post_mime_type' => 'application/pdf',
                    'post_title'     => $filename,
                    'post_content'   => '',
@@ -160,9 +158,49 @@ class Ng1SondagePlugin {
                $post_id
            );
           }
-    
+          
             // Mettre à jour le champ ACF PDF avec l'ID de l'attachment
             update_field('resultat_pdf', $attachment_id, $post_id);
+var_dump(get_field('email_send',$post_id));
+            if(empty(get_field('email_send',$post_id))){
+                $user_data = get_userdata($user_id);
+                $user_email=$user_data->user_email;
+        
+                //php mailer variable
+                $from ='no-reply@auto-diag-qvt.fr';
+
+                $admin_subject = "Résultat du quizz QVT de ".$user_email;
+                $user_subject = 'Résultat de votre quizz QVT';
+
+                
+
+                $headers = 'From: '. $from . "\r\n" .
+                'Reply-To: ' . $from . "\r\n";
+
+                $admin_email=get_field('survey_admin_email','option');
+                if(empty( $admin_email)){$admin_email='nicolas@pixelea.fr';} 
+
+                $admin_message= get_field('survey_admin_email_message','option');
+                if(empty( $admin_message)) {
+                    $admin_message='Veuillez trouver en pièce jointe les résultats du quizz QVT soumis par un utilisateur. Merci de les examiner et de prendre les mesures appropriées.';
+                }
+                $user_message= get_field('survey_user_email_message','option');
+                if(empty( $user_message)) {
+                    $user_message="Veuillez trouver en pièce jointe les résultats de votre quizz QVT. Prenez-en compte pour votre information.";
+                }
+                
+                $pdf_file_email = $upload_dir['path'] . '/'. $sub_folder ."_". $filename;
+                if (!file_exists($pdf_file_email)) $pdf_file_email=array();
+           
+                //Here put your Validation and send mail
+               $send= wp_mail($admin_email, $admin_subject, $admin_message, $headers,$pdf_file_email);
+               $send= wp_mail($user_email, $user_subject, $user_message, $headers,$pdf_file_email);
+              
+                if($send){
+                    update_field('email_send', 1, $post_id);
+                }
+
+            }
         }
     }
     public static function ng1_check_attachment_file_exist($filename){
@@ -443,10 +481,12 @@ class Ng1SondagePlugin {
         wp_register_style('sondage-style', plugins_url('style.css', __FILE__));
         wp_enqueue_style('sondage-style');
     }
-    public static function convertTextAreaToRadioButtons($textareaValue,$name,$question_nb="1", $cat='', $val='',$readonly=false,$post_id=false) {
+    public static function convertTextAreaToRadioButtons($textareaValue,$name,$question_nb="1", $cat='', $val='',$readonly=false,$post_id=false,$random=false) {
         $lines = explode("\n", $textareaValue);
-  
+        if($random == true) shuffle($lines);
+
         foreach ($lines as $index => $line) {
+           
             $line = trim($line);
     
             if ($line !== '') {
@@ -498,8 +538,10 @@ class Ng1SondagePlugin {
  
     public static function convertTextAreaToReponses($textareaValue, $name, $question_nb = "1", $cat = '', $val = '', $readonly = false, $post_id = false) {
         $lines = explode("\n", $textareaValue);
-    
+
+
         foreach ($lines as $index => $line) {
+            
             $line = trim($line);
     
             if ($line !== '') {
@@ -705,7 +747,7 @@ class Ng1SondagePlugin {
                     'post_status'   => 'publish', // Statut de publication $this->creer_tableau_textarea_to_array_reponses($data)
                     'post_content' => base64_encode($svg),
                 );
-            
+
               // Update the post into the database
                 wp_update_post( $update );
                 }
@@ -919,6 +961,22 @@ public static function get_survey_category($categorie_array_or_id) {
     // Retourner le code SVG
     return $svg;
     }
+    public function create_admin_message_page() {
+        // Vérifier si ACF est actif
+        if( function_exists('acf_add_options_page') ) {
+          // Créer la page d'administration avec ACF
+          acf_add_options_page(array(
+            'page_title' => 'Email Message',
+            'menu_title' => 'Email Message',
+            'menu_slug' => 'ng1-survey-message',
+            'capability' => 'manage_options',
+            'icon_url' => 'dashicons-email-alt2',
+            'redirect' => false
+          ));
+        }
+      }
+      
+
     public static function generateSpiderChartDraw($data) {
 
         // Paramètres du graphique

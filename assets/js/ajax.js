@@ -42,7 +42,7 @@
             console.log(response.data);
           },
           error: function(xhr, status, error) {
-            alert('error');
+    
             console.log( status);
             // Afficher une erreur en cas d'échec
             console.log(error);
