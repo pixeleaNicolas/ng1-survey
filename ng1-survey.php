@@ -99,7 +99,7 @@ class Ng1SondagePlugin {
     public function generate_pdf($post_id, $post, $update) {
 
         // Vérifier si le post est de type 'reponse' et s'il ne s'agit pas d'une sauvegarde automatique
-        if (get_post_type($post_id) === 'reponse' && !wp_is_post_autosave($post_id) && !wp_is_post_revision($post_id)) {
+        if (get_post_type($post_id) === 'reponse' && !wp_is_post_autosave($post_id) && !wp_is_post_revision($post_id) && get_post_status($post_id)=="publish") {
             // Création de l'instance Html2Pdf
             $html2pdf = new HTML2PDF('P', 'A4', 'fr', true, 'UTF-8', array(20, 20, 20,20));
             $html2pdf->pdf->SetAutoPageBreak(true, 15);
@@ -161,8 +161,8 @@ class Ng1SondagePlugin {
           
             // Mettre à jour le champ ACF PDF avec l'ID de l'attachment
             update_field('resultat_pdf', $attachment_id, $post_id);
-var_dump(get_field('email_send',$post_id));
-            if(empty(get_field('email_send',$post_id))){
+
+          if(empty(get_field('email_send',$post_id))){
                 $user_data = get_userdata($user_id);
                 $user_email=$user_data->user_email;
         
@@ -188,19 +188,31 @@ var_dump(get_field('email_send',$post_id));
                 if(empty( $user_message)) {
                     $user_message="Veuillez trouver en pièce jointe les résultats de votre quizz QVT. Prenez-en compte pour votre information.";
                 }
-                
-                $pdf_file_email = $upload_dir['path'] . '/'. $sub_folder ."_". $filename;
-                if (!file_exists($pdf_file_email)) $pdf_file_email=array();
-           
-                //Here put your Validation and send mail
-               $send= wp_mail($admin_email, $admin_subject, $admin_message, $headers,$pdf_file_email);
-               $send= wp_mail($user_email, $user_subject, $user_message, $headers,$pdf_file_email);
-              
+                $pdf_file_email =$upload_dir['path'] . '/'.$sub_folder ."_". $filename;
+                $pdf_file_email_url =$upload_dir['url'] . '/'.$sub_folder ."_". $filename;
+
+                $admin_message .= '<a href="' . $pdf_file_email_url . '">Lien vers le fichier PDF</a>';
+                $user_message .= '<a href="' . $pdf_file_email_url . '">Lien vers le fichier PDF</a>';
+
+              //if (!file_exists($pdf_file_email)) {
+              //    $pdf_file_email=array();
+              //    echo 'exist pas';
+              //}else{
+              //    echo $pdf_file_email;
+              //    echo $pdf_file_email_url ;
+              //}
+               // sleep(45);
+         
+              //$send = wp_mail($admin_email, $admin_subject, $admin_message, $headers,array($pdf_file_email));
+              //$send = wp_mail($user_email, $user_subject, $user_message, $headers,array($pdf_file_email));
+
+             $send = wp_mail($admin_email, $admin_subject, $admin_message, $headers);
+             $send = wp_mail($user_email, $user_subject, $user_message, $headers);
                 if($send){
                     update_field('email_send', 1, $post_id);
                 }
 
-            }
+           }
         }
     }
     public static function ng1_check_attachment_file_exist($filename){
